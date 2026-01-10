@@ -1,0 +1,59 @@
+// frontend/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // Lưu hash password
+  name      String?
+  createdAt DateTime @default(now())
+  
+  // Quan hệ
+  games     GameResult[]
+  configs   AiConfig[]
+}
+
+// Bảng lưu kết quả game (dùng cho Leaderboard & Thống kê)
+model GameResult {
+  id        String   @id @default(cuid())
+  score     Int
+  maxTile   Int      // Ô lớn nhất đạt được (2048, 4096...)
+  moves     Int      // Số nước đi
+  
+  // Thông tin AI (nếu là AI chơi)
+  isAi      Boolean  @default(false)
+  algoName  String?  // "Expectimax", "Minimax"...
+  depth     Int?
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// Bảng lưu cấu hình Heuristic (Dùng cho GA Tuning sau này)
+model AiConfig {
+  id            String   @id @default(cuid())
+  name          String   // Ví dụ: "Best Aggressive Config"
+  
+  // Các trọng số Heuristic (Float)
+  w_monotonic   Float
+  w_smoothness  Float
+  w_free_tiles  Float
+  w_merges    Float
+  
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  createdAt     DateTime @default(now())
+
+  @@index([userId])
+}
